@@ -184,7 +184,7 @@ class Enemy {
             const x4 = x3 + 10;
             const y4 = y3 + 16;
             if (aabbCheck(95, 64, 105, 80, x3, y3, x4, y4)) {
-                Game.health -= deltaTime / 100;
+                Game.health -= deltaTime / 100 * (Math.log10(Game.kills + 1) + 1);
             }
 
             const dx = -playerX / 1.6 - this.x;
@@ -290,7 +290,8 @@ class Game {
     static swingDirection = false;
     static startAngle = 0;
     static endAngle = 0;
-    static lastDirection = false; // false = left, true = right
+    static lastDx = 1;
+    static lastDy = 0;
     static minSwingAngle = Math.PI / 2;
     static maxSwingAngle = Math.PI / 1.5;
     static swingAngle = 0;
@@ -453,6 +454,10 @@ class Game {
         if (this.health <= 0) {
             Draw.background = Enemy.color.toString();
             Draw.clear();
+
+            Draw.color = '#870413';
+            Draw.circle(100, 75, 56);
+    
             Draw.color = '#ffffff';
             Draw.text(100, 70, 'You Died!', 20, true, true);
             Draw.text(100, 90, `Kills: ${this.kills}`, 10, true, true);
@@ -461,10 +466,10 @@ class Game {
         if (this.enemies.length < this.totalEnemies) {
 
             for (let i = this.enemies.length; i < this.totalEnemies; i++) {
-                const r = Math.pow(Math.random(), 2) * 500 + 150;
+                const r = Math.pow(Math.random(), 1.5) * 300 + 150;
                 const theta = Math.random() * Math.PI * 2;
 
-                this.enemies.push(new Enemy(r * Math.cos(theta) + this.x, r * Math.sin(theta) + this.y, 20));
+                this.enemies.push(new Enemy(r * Math.cos(theta) - this.x / 1.6, r * Math.sin(theta) - this.y, 20));
             }
         }
 
@@ -485,11 +490,14 @@ class Game {
         }
         if (Key.a || Key.arrowLeft) {
             dx += deltaTime / this.xSpeed;
-            this.lastDirection = true;
         }
         if (Key.d || Key.arrowRight) {
             dx -= deltaTime / this.xSpeed;
-            this.lastDirection = false;
+        }
+
+        if (dx !== 0 || dy !== 0) {
+            this.lastDx = dx;
+            this.lastDy = dy;
         }
 
         this.x += dx;
@@ -498,10 +506,11 @@ class Game {
         if (Key.update().enter) {
             if (this.swingTimer === 0) {
                 this.swingTimer = this.maxSwingTime;
-                let angle = Math.PI * this.lastDirection; // God awful code
-                if (dy !== 0 || dx !== 0) {
-                    angle = Math.atan2(-dy, -dx);
+                if (dy === 0 && dx === 0) {
+                    dx = this.lastDx;
+                    dy = this.lastDy;
                 }
+                let angle = Math.atan2(-dy, -dx);
 
                 this.swingAngle = angle;
 
